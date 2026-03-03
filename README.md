@@ -10,4 +10,7 @@ The Cycle Analyst 3.1 (firmware 3.2b3) does not play out well with the SEMPU T2 
 
 Use an Arduino instead...
 
+![IMG_20260303_104353](https://github.com/user-attachments/assets/6adf9a32-2b04-4ed7-98b1-506039122c47)
+
+
 More details will be posted soon. Here a draft as a placeholder.
