@@ -20,8 +20,9 @@ void SpeedPulseEvent(); // Interrupt routine called each rising edge on Speed
   0.95 // To average RPM, higher is smoother [0-1] ! The filtering also depends
        // on the loop duration !
 #define TimeStopLimit \
-  200UL // A stop is considered if the time between two edges is greater than
-        // this value (mSec)
+  200UL                  // A stop is considered if the time between two edges is greater than
+                         // this value (mSec)
+uint8_t RpmStopDetector; // +1 each loop, and cleared each speed pulse. If this > TimeStopLimit : Rpm = zero
 #define DebouneTime \
   2UL                        // RPM is not calculated if is lower than this value (mSec)
 #define BikerMaxRpm 200      // Max biker rpm to map the throttle
@@ -89,9 +90,8 @@ void loop()
   // TODO: treat cases where the loop is slower than the poles counts (an
   // interruption situation occurs in between two loops passes)
   // In practice, my guess is this is not critical, since that would mean the
-  // biker restarted / continued to pedal in the meanwhile
-  if ((micros() - LastTimeOfLastEdge) >
-      TimeStopLimit * 1000UL) // Stop dectector
+  // biker restarted / continued to pedal in the meanwhile  =====>>>> Should work well now
+  if (RpmStopDetector++ > (1000 * TimeStopLimit / LoopTimeUs)) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
     BikerRpmFiltered = 0;
 
   BikerRpmFiltered = constrain(BikerRpmFiltered, 0, BikerMaxRpm);
@@ -102,7 +102,7 @@ void loop()
   float TorqueValueFilteredNm = (TorqueValueFiltered - TorqueValueNeutral) * TorqueSensorGain; // Convert voltage to torque in Nm, and remove the neutral value
 
   HumanPowerWatt =
-      TorqueValueFilteredNm * BikerRpmFiltered * 2 * 3.14159265f / 60;
+      TorqueValueFilteredNm * BikerRpmFiltered * 2.0 * 3.14159265f / 60.0;
 
   HumanPowerWattFiltered = HumanPowerWattFiltered * HumanPowerWattAlphaGain + HumanPowerWatt * (1 - HumanPowerWattAlphaGain);
   HumanPowerWattFiltered = constrain(HumanPowerWattFiltered, 0, HumanPowerWattMax);
@@ -141,7 +141,7 @@ void loop()
 
   while (micros() < NextLoopTime) // wait before starting next loop
     ;
-  NextLoopTime = micros() + LoopTimeUs; // Init next loop time
+  NextLoopTime += LoopTimeUs; // Init next loop time
 }
 
 void SpeedPulseEvent() // Interrupt called each rising edge and refresh time
