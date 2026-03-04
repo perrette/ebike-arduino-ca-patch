@@ -17,4 +17,4 @@ More details will be posted soon. Here a draft as a placeholder.
 
 ## Thanks
 
-Thanks to @Jean for kicking this off
+Thanks to @JeanPannetier for kicking this off
