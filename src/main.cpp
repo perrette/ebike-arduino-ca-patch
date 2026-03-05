@@ -34,9 +34,11 @@ uint32_t LastTimeOfLastEdge; // Time of last edge on speed signal (uSec)
 // from sensor data sheet
 #define TorqueValueNeutral 1.5f
 #define TorqueValueMax 3.0f
-// #define TorqueValueSlope 0.025f  // 0.25V / 10Kg.f
 // calibration for specific cranks etc (made to work in practice)
-#define TorqueSensorGain 100 // Nm/V, to be calibrated with a torque bench
+// sensor : 0.25 kg / 10V
+// pedal krank: 15 cm
+// => (10 kg / 0.25 V) * (9.81 m/s2) * (0.15 m) = 58.86 Nm/V
+#define TorqueSensorGain 60 // Nm/V
 // #define TorqueValueMax 500.0f // Maximum torque value in Nm, to be calibrated
 #define TorqueValueFilteredAlphaGain 0.9f
 float TorqueValue;
