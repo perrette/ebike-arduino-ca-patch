@@ -75,6 +75,9 @@ void setup()
                   RISING); // Call SpeedPulseEvent each rising edge on SpeedPin
 }
 
+#define DEBUG_MODE true
+// #define DEBUG_MODE false
+
 void loop()
 {
 
@@ -96,7 +99,10 @@ void loop()
 
   BikerRpmFiltered = constrain(BikerRpmFiltered, 0, BikerMaxRpm);
 
-  TorqueValue = analogRead(TorquePin) * ANALOG_TO_VOLT_IN;
+  if (DEBUG_MODE)
+    BikerRpmFiltered = 30.0f; // Remove @ Release
+
+      TorqueValue = analogRead(TorquePin) * ANALOG_TO_VOLT_IN;
   TorqueValueFiltered = TorqueValueFiltered * TorqueValueFilteredAlphaGain + TorqueValue * (1 - TorqueValueFilteredAlphaGain);
   constrain(TorqueValueFiltered, TorqueValueNeutral, TorqueValueMax);                          // Constrain filtered torque value to be between 0 and reference voltage
   float TorqueValueFilteredNm = (TorqueValueFiltered - TorqueValueNeutral) * TorqueSensorGain; // Convert voltage to torque in Nm, and remove the neutral value
@@ -114,7 +120,6 @@ void loop()
   analogWrite(ThrottlePin,
               Throttle_Value); // Throttle_Value has to be set as you want
 
-  bool DEBUG_MODE = true;
   if (DEBUG_MODE)
   {
     Serial.print(">"); // Remove @ Release
