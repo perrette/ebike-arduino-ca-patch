@@ -104,7 +104,7 @@ void loop()
 
       TorqueValue = analogRead(TorquePin) * ANALOG_TO_VOLT_IN;
   TorqueValueFiltered = TorqueValueFiltered * TorqueValueFilteredAlphaGain + TorqueValue * (1 - TorqueValueFilteredAlphaGain);
-  constrain(TorqueValueFiltered, TorqueValueNeutral, TorqueValueMax);                          // Constrain filtered torque value to be between 0 and reference voltage
+  TorqueValueFiltered = constrain(TorqueValueFiltered, TorqueValueNeutral, TorqueValueMax);       // Constrain filtered torque value to be between 0 and reference voltage
   float TorqueValueFilteredNm = (TorqueValueFiltered - TorqueValueNeutral) * TorqueSensorGain; // Convert voltage to torque in Nm, and remove the neutral value
 
   HumanPowerWatt =
