@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <avr/wdt.h>
 #include "helpers.h"
 
 void SpeedPulseEvent(); // Interrupt routine called each rising edge on Speed
@@ -73,10 +74,13 @@ void setup()
   // Interrupt init
   attachInterrupt(digitalPinToInterrupt(SpeedPin), SpeedPulseEvent,
                   RISING); // Call SpeedPulseEvent each rising edge on SpeedPin
+
+  wdt_enable(WDTO_500MS); // Set 0.5 Sec watchdog
 }
 
 void loop()
 {
+  wdt_reset(); // Must be called at least every 500ms otherwise Arduino Reset is triggered  
 
   if (TimeBetween2edge >
       (DebouneTime * 1000)) // Rpm is not calculated if time is too low between
