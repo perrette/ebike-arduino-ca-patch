@@ -81,7 +81,7 @@ void setup()
   pinMode(DirectionPin, INPUT_PULLUP);
   pinMode(SpeedPin, INPUT_PULLUP);
   pinMode(ThrottlePin, OUTPUT);
-  pinMode(ThrottleCheckPin, INPUT);
+  // pinMode(ThrottleCheckPin, INPUT);
   pinMode(TorquePin, INPUT);
 
   Serial.begin(115200);
@@ -98,8 +98,15 @@ void setup()
 #define DEBUG_MODE true
 // #define DEBUG_MODE false
 
+uint16_t event_type;
+#define EVENT_TYPE_DEFAULT 0
+#define EVENT_TYPE_RPM_RESET 1
+#define EVENT_TYPE_BACK_PEDALING 2
+
 void loop()
 {
+
+  event_type = EVENT_TYPE_DEFAULT;
 
   if (TimeBetween2edge >
       (DebouneTime * 1000)) // Rpm is not calculated if time is too low between
@@ -114,19 +121,27 @@ void loop()
   // interruption situation occurs in between two loops passes)
   // In practice, my guess is this is not critical, since that would mean the
   // biker restarted / continued to pedal in the meanwhile  =====>>>> Should work well now
-  if (RpmStopDetector++ > (1000 * TimeStopLimit / LoopTimeUs)) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
-  {
-    BikerRpmFiltered = 0;
-    if (DEBUG_MODE)
-      Serial.println("Rpm reset to zero since no pulse detected for a while"); // Remove @ Release
-  }
+  // if (RpmStopDetector++ > (1000 * TimeStopLimit / LoopTimeUs))   // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
+    if (micros() - LastTimeOfLastEdge > TimeStopLimit * 1000) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
+    // if (false) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
+    {
+      event_type = EVENT_TYPE_RPM_RESET;
+      if (DEBUG_MODE)
+        Serial.println("Rpm reset to zero since no pulse detected for a while (deactivated)"); // Remove @ Release
+      BikerRpmFiltered = 0;
+      // StopBike(); // Stop the bike if no pulse is detected for a while, to avoid a long wait before stopping the bike
+      // return;
+    }
 
   if (StopMotorPower) // If StopMotorPower is set to true in the interrupt routine, stop the bike
   {
-    StopBike() ; // Stop the bike by resetting the state and applying the neutral throttle value
+    event_type = EVENT_TYPE_BACK_PEDALING;
+    // BikerRpmFiltered = 0; // Set filtered RPM to zero to avoid a jump when stopping the bike
+    StopMotorPower = false; // Reset StopMotorPower flag to avoid a long stop if the interrupt is triggered again by mistake
+    // StopBike() ; // Stop the bike by resetting the state and applying the neutral throttle value
     if (DEBUG_MODE)
-      Serial.println("Bike stopped since StopMotorPower flag is set"); // Remove @ Release
-    return; // Skip the rest of the loop
+      Serial.println("Bike stopped since StopMotorPower flag is set (deactivated)"); // Remove @ Release
+    // return; // Skip the rest of the loop
   }
 
   BikerRpmFiltered = constrain(BikerRpmFiltered, 0, BikerMaxRpm);
@@ -176,9 +191,12 @@ void loop()
     Serial.print(MotorPower);
     Serial.print(",Throttle_Value:");
     Serial.print(Throttle_Value_Volt);
-    Serial.print(",Throttle_Check:");
-    Serial.print(analogRead(ThrottleCheckPin) * ANALOG_TO_VOLT_IN);
+    // Serial.print(",Throttle_Check:");
+    // Serial.print(analogRead(ThrottleCheckPin) * ANALOG_TO_VOLT_IN);
+    Serial.print(",Event_Type:");
+    Serial.print(event_type);
     Serial.println();
+    Serial.println("Time left to wait (ms): " + String((NextLoopTime - micros()) / 1000.0f) + " ms (total " + String(LoopTimeUs / 1000.0f) + " ms)"); // Remove @ Release
   }
 
   while (micros() < NextLoopTime) // wait before starting next loop
@@ -211,6 +229,9 @@ void ResetBike() // Function to reset the bike, can be called in case of emergen
   TorqueValueFiltered = TorqueValueNeutral; // Set torque to neutral value to avoid a jump when restarting
   HumanPowerWattFiltered = 0; // Set human power to zero to avoid a jump when restarting
   Throttle_Value = NeutralThrottleValue;    // Reset throttle to neutral value
+  TimeBetween2edge = 10e10; // must be larger than debone time
+  LastTimeOfLastEdge = micros(); // must not be larger than current (micros()) + TimeStopLimit to avoid a long wait before stopping the bike in case of no pulse detected
+  RpmStopDetector = 0;
 }
 
 void ResetTime() {
