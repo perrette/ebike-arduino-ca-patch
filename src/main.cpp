@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <avr/wdt.h>
 #include "helpers.h"
 
 void SpeedPulseEvent(); // Interrupt routine called each rising edge on Speed
@@ -27,6 +28,9 @@ void StopBike();  // Function to stop the bike by resetting the state and applyi
        // on the loop duration !
 #define TimeStopLimit \
   200UL                  // A stop is considered if the time between two edges is greater than
+                         // this value (mSec)
+uint8_t RpmStopDetector 200UL ; // +1 each loop, and cleared each speed pulse. If this > TimeStopLimit : Rpm = zero
+                    // A stop is considered if the time between two edges is greater than
                          // this value (mSec)
 uint8_t RpmStopDetector; // +1 each loop, and cleared each speed pulse. If this > TimeStopLimit : Rpm = zero
 #define DebouneTime \
@@ -92,6 +96,8 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(SpeedPin), SpeedPulseEvent,
                   RISING); // Call SpeedPulseEvent each rising edge on SpeedPin
 
+  wdt_enable(WDTO_500MS); // Set 0.5 Sec watchdog
+
   ResetBike(); // Reset the bike to be sure to start with a known state
 }
 
@@ -107,6 +113,7 @@ void loop()
 {
 
   event_type = EVENT_TYPE_DEFAULT;
+  wdt_reset(); // Must be called at least every 500ms otherwise Arduino Reset is triggered  
 
   if (TimeBetween2edge >
       (DebouneTime * 1000)) // Rpm is not calculated if time is too low between
@@ -121,8 +128,8 @@ void loop()
   // interruption situation occurs in between two loops passes)
   // In practice, my guess is this is not critical, since that would mean the
   // biker restarted / continued to pedal in the meanwhile  =====>>>> Should work well now
-  // if (RpmStopDetector++ > (1000 * TimeStopLimit / LoopTimeUs))   // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
-    if (micros() - LastTimeOfLastEdge > TimeStopLimit * 1000) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
+    if (RpmStopDetector++ > (1000 * TimeStopLimit / LoopTimeUs))   // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
+    //if (micros() - LastTimeOfLastEdge > TimeStopLimit * 1000) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
     // if (false) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
     {
       event_type = EVENT_TYPE_RPM_RESET;
@@ -229,9 +236,9 @@ void ResetBike() // Function to reset the bike, can be called in case of emergen
   TorqueValueFiltered = TorqueValueNeutral; // Set torque to neutral value to avoid a jump when restarting
   HumanPowerWattFiltered = 0; // Set human power to zero to avoid a jump when restarting
   Throttle_Value = NeutralThrottleValue;    // Reset throttle to neutral value
-  TimeBetween2edge = 10e10; // must be larger than debone time
-  LastTimeOfLastEdge = micros(); // must not be larger than current (micros()) + TimeStopLimit to avoid a long wait before stopping the bike in case of no pulse detected
-  RpmStopDetector = 0;
+  //TimeBetween2edge = 10e10; // must be larger than deboune time
+  //LastTimeOfLastEdge = micros(); // must not be larger than current (micros()) + TimeStopLimit to avoid a long wait before stopping the bike in case of no pulse detected
+  //RpmStopDetector = 0;
 }
 
 void ResetTime() {
