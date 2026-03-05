@@ -115,18 +115,24 @@ void loop()
   // In practice, my guess is this is not critical, since that would mean the
   // biker restarted / continued to pedal in the meanwhile  =====>>>> Should work well now
   if (RpmStopDetector++ > (1000 * TimeStopLimit / LoopTimeUs)) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
+  {
     BikerRpmFiltered = 0;
+    if (DEBUG_MODE)
+      Serial.println("Rpm reset to zero since no pulse detected for a while"); // Remove @ Release
+  }
 
   if (StopMotorPower) // If StopMotorPower is set to true in the interrupt routine, stop the bike
   {
     StopBike() ; // Stop the bike by resetting the state and applying the neutral throttle value
+    if (DEBUG_MODE)
+      Serial.println("Bike stopped since StopMotorPower flag is set"); // Remove @ Release
     return; // Skip the rest of the loop
   }
 
   BikerRpmFiltered = constrain(BikerRpmFiltered, 0, BikerMaxRpm);
 
-  if (DEBUG_MODE)
-    BikerRpmFiltered = 30.0f; // Remove @ Release
+  // if (DEBUG_MODE)
+  //   BikerRpmFiltered = 30.0f; // Remove @ Release
 
   TorqueValue = analogRead(TorquePin) * ANALOG_TO_VOLT_IN;
   TorqueValueFiltered = TorqueValueFiltered * TorqueValueFilteredAlphaGain + TorqueValue * (1 - TorqueValueFilteredAlphaGain);
@@ -194,6 +200,8 @@ void SpeedPulseEvent() // Interrupt called each rising edge and refresh time
 void StopBikeEvent() // Interrupt called on falling edge of DirectionPin
 {
   StopMotorPower = true; // Set flag to stop the bike
+  if (DEBUG_MODE)
+    Serial.println("StopBikeEvent called"); // Remove @ Release
 }
 
 void ResetBike() // Function to reset the bike, can be called in case of emergency or to restart the bike
