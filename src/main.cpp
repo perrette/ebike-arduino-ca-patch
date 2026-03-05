@@ -44,8 +44,9 @@ uint32_t LastTimeOfLastEdge; // Time of last edge on speed signal (uSec)
 float TorqueValue;
 float TorqueValueFiltered = TorqueValueNeutral; // initialize filtered torque value to neutral value to avoid a jump at the beginning
 
-#define HumanPowerWattMax 200.0f // Max throttle at that power
+#define HumanPowerWattMax 1000.0f // Constrain the calculation to that value
 #define HumanPowerWattAlphaGain 0.0f
+#define MotorPowerBoostFactor 1.0f // Motor Watt per Human Watt : Gain to convert the human power to motor power
 float HumanPowerWatt;
 float HumanPowerWattFiltered = 0.0f;
 
@@ -57,6 +58,7 @@ uint16_t Throttle_Value =
 // 128;     // Throttle Value : [0-1023] = Duty Cycle [0-100]%
 #define MinThrottleValue 1.1f
 #define MaxThrottleValue 3.5f
+#define MotorPowerAtMaxThrottle 1500.0f // Motor power in Watt at max throttle
 
 // Timin
 #define LoopTimeUs 50000UL // Main loop duration (uSec)
@@ -115,9 +117,12 @@ void loop()
   HumanPowerWattFiltered = HumanPowerWattFiltered * HumanPowerWattAlphaGain + HumanPowerWatt * (1 - HumanPowerWattAlphaGain);
   HumanPowerWattFiltered = constrain(HumanPowerWattFiltered, 0, HumanPowerWattMax);
 
+  float MotorPower = HumanPowerWattFiltered * MotorPowerBoostFactor;
+
   Throttle_Value_Volt =
-      mapFloat(HumanPowerWattFiltered, 0, HumanPowerWattMax, MinThrottleValue,
+      mapFloat(MotorPower, 0, MotorPowerAtMaxThrottle, MinThrottleValue,
                MaxThrottleValue);                            // Map RPM to throttle voltage
+
   Throttle_Value = Throttle_Value_Volt * VOLT_TO_ANALOG_OUT; //
   analogWrite(ThrottlePin,
               Throttle_Value); // Throttle_Value has to be set as you want
