@@ -73,6 +73,7 @@ extern volatile bool StopMotorPower; // Set to true in the interrupt routine to 
 extern volatile uint16_t event_type;
 #define EVENT_TYPE_DEFAULT 0
 #define EVENT_TYPE_RPM_RESET 1
+#define EVENT_TYPE_BACK_PEDALING 2
 // Timing
 #define LoopTimeUs 50000UL // Main loop duration (uSec)
 
@@ -80,6 +81,7 @@ extern volatile uint16_t event_type;
 // Subroutine declaration
 //=========================
 void ResetBike();               // Used in Setup
+void BackPedalEvent();          // Interrupt routine called on falling edge of DirectionPin
 void StopMotor();               // Function to stop the bike by resetting the state and applying the neutral throttle value
 
 #endif // ALL_DEFINE_H

@@ -29,3 +29,12 @@ void StopMotor() // Function to stop the bike by resetting the state and applyin
 #endif
     StopMotorPower = true; // Set flag to stop the bike
 }
+
+void BackPedalEvent() // Interrupt called on falling edge of DirectionPin
+{
+#ifdef DEBUG
+    Serial.println("BackPedalEvent called");
+#endif
+    event_type = EVENT_TYPE_BACK_PEDALING;
+    StopMotor(); // Stop the bike by resetting the state and applying the neutral throttle value
+}

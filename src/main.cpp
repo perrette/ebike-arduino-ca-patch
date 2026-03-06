@@ -22,7 +22,7 @@ void setup()
   Serial.begin(115200);
 
   // Interrupt init
-  // attachInterrupt(digitalPinToInterrupt(DirectionPin_In), StopBikeEvent, FALLING); // Call StopBikeEvent each falling edge on DirectionPin
+  attachInterrupt(digitalPinToInterrupt(DirectionPin_In), BackPedalEvent, FALLING); // Call StopBikeEvent each falling edge on DirectionPin
   attachInterrupt(digitalPinToInterrupt(SpeedPin_In), SpeedPulseEvent, RISING); // Call SpeedPulseEvent each rising edge on SpeedPin
 
   // Security
