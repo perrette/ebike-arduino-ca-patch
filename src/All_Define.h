@@ -47,12 +47,19 @@ extern float TorqueValueFiltered; // Set in ResetBike() to neutral value to avoi
 extern float HumanPowerWatt;
 extern float HumanPowerWattFiltered; // set in ResetBike() to zero to avoid a jump at the beginning
 
+// Brake
+#define Brake_Volt_Threshold 1.2f // Threshold voltage to consider the brake is pressed, to be calibrated
+#define Brake_Volt_Min 1.25f      // Threshold voltage to consider the brake is pressed, to be calibrated
+#define Brake_Volt_Max 4.5f       // Maximum voltage for the brake sensor, to be calibrated
+
 //=========================
 // Throttle to PhaseRunner
 //=========================
 // Throttle :
 #define MinThrottleValue 1.1f
 #define MaxThrottleValue 3.8f
+#define MinThrottleBrakeValue 0.85f
+#define MaxThrottleBrakeValue 0.0f
 #define NeutralThrottleValue 1.0f
 #define MotorPowerAtMaxThrottle 1500.0f // Motor power in Watt at max throttle
 
@@ -74,6 +81,7 @@ extern volatile uint16_t event_type;
 #define EVENT_TYPE_DEFAULT 0
 #define EVENT_TYPE_RPM_RESET 1
 #define EVENT_TYPE_BACK_PEDALING 2
+#define EVENT_TYPE_BRAKE 3
 // Timing
 #define LoopTimeUs 50000UL // Main loop duration (uSec)
 
@@ -82,6 +90,7 @@ extern volatile uint16_t event_type;
 //=========================
 void ResetBike();               // Used in Setup
 void BackPedalEvent();          // Interrupt routine called on falling edge of DirectionPin
+void BrakeEvent();              // Interrupt routine called on rising edge of DigitalBrakePin
 void StopMotor();               // Function to stop the bike by resetting the state and applying the neutral throttle value
 
 #endif // ALL_DEFINE_H

@@ -38,3 +38,12 @@ void BackPedalEvent() // Interrupt called on falling edge of DirectionPin
     event_type = EVENT_TYPE_BACK_PEDALING;
     StopMotor(); // Stop the bike by resetting the state and applying the neutral throttle value
 }
+
+void BrakeEvent() // Interrupt called on rising edge of BrakePin
+{
+#ifdef DEBUG
+    Serial.println("BrakeEvent called");
+#endif
+    event_type = EVENT_TYPE_BRAKE;
+    StopMotor(); // Stop the bike by resetting the state and applying the neutral throttle value
+}
