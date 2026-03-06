@@ -1,32 +1,19 @@
-//=================================================================
-// Here, all we need to get and filter Biker Rpm and detect a stop
-//=================================================================
+#ifndef BIKERPM_H
+#define BIKERPM_H
 
-void UpdateBikerRpmFiltered()
-{
-    if (TimeBetween2edge > (DebouneTime * 1000)) // Rpm is not calculated if time is too low between two edges on speed signal
-    {
-        BikerRpmRaw = 60000000.0 / (TimeBetween2edge * PasPole);                               // RPM calculation
-        BikerRpmFiltered = BikerRpmFiltered * RpmAlphaGain + BikerRpmRaw * (1 - RpmAlphaGain); // Add Filter to average
-    }
+//=============
+// Speed Sensor
+//=============
+#define PasPole 48.0                  // Pole nbr
+#define RpmAlphaGain 0.95             // To average RPM, higher is smoother [0-1] ! The filtering also depends on the loop duration !
+#define TimeStopLimit 200UL           // A stop is considered if the time between two edges is greater than this value (mSec)
+#define DebouneTime 2UL               // RPM is not calculated if is lower than this value (mSec)
+#define BikerMaxRpm 200               // Max biker rpm to map the throttle
 
-    if (RpmStopDetector++ > (1000 * TimeStopLimit / LoopTimeUs)) // Reset Biker Rpm if the time since the last pulse exceeds TimeStopLimit
-    {
-        event_type = EVENT_TYPE_RPM_RESET;
-#ifdef DEBUG
-        Serial.println("Rpm reset to zero since no pulse detected for a while (deactivated)"); // Remove @ Release
-#endif
-        BikerRpmFiltered = 0;
-    }
+extern float BikerRpmRaw;               // Raw Biker RPM value
+extern float BikerRpmFiltered;               // Filtered Biker RPM value
 
-    BikerRpmFiltered = constrain(BikerRpmFiltered, 0, BikerMaxRpm);
-}
+void UpdateBikerRpmFiltered(); // Update Biker Rpm filtered with auto Stop detector
+void SpeedPulseEvent();        // Interrupt routine called each rising edge on SpeedPin to refresh time between
 
-void SpeedPulseEvent() // Interrupt called each rising edge and refresh time between 2 edges if it's valid
-{
-    uint32_t CurrentTime = micros();                         // save current time (uSec)
-    if (CurrentTime > LastTimeOfLastEdge)                    // Don't refresh time since last edge if micro() overflowed
-        TimeBetween2edge = CurrentTime - LastTimeOfLastEdge; // Get time since last edge
-    LastTimeOfLastEdge = CurrentTime;                        // Save current time for next calculation
-    RpmStopDetector = 0;                                     // Reset Detector each interrupt on Speed signal
-}
+#endif // BIKERPM_H

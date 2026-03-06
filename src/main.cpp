@@ -4,6 +4,14 @@
 #include <All_Define.h>
 #include <BikerRPM.h>
 
+// Timing
+uint32_t NextLoopTime;     // For loop time calibration
+
+float TargetMotorPower;
+float Throttle_Value_Volt;
+uint16_t Throttle_Value; // Throttle Value : [0-255] = Duty Cycle [0-100]%
+
+
 void setup()
 {
   // I/O init
@@ -33,18 +41,6 @@ void loop()
   // In practice, my guess is this is not critical, since that would mean the
   // biker restarted / continued to pedal in the meanwhile  =====>>>> Should work well now
 
-  if (StopMotorPower) // If StopMotorPower is set to true in the interrupt routine, stop the bike
-  {
-    event_type = EVENT_TYPE_BACK_PEDALING;
-    // BikerRpmFiltered = 0; // Set filtered RPM to zero to avoid a jump when stopping the bike
-    StopMotorPower = false; // Reset StopMotorPower flag to avoid a long stop if the interrupt is triggered again by mistake
-// StopBike() ; // Stop the bike by resetting the state and applying the neutral throttle value
-#ifdef DEBUG
-    Serial.println("Bike stopped since StopMotorPower flag is set (deactivated)"); // Remove @ Release
-#endif
-    // return; // Skip the rest of the loop
-  }
-
   // if (DEBUG_MODE)
   //   BikerRpmFiltered = 30.0f; // Remove @ Release
 
@@ -58,10 +54,21 @@ void loop()
   HumanPowerWattFiltered = HumanPowerWattFiltered * HumanPowerWattAlphaGain + HumanPowerWatt * (1 - HumanPowerWattAlphaGain);
   HumanPowerWattFiltered = constrain(HumanPowerWattFiltered, 0, HumanPowerWattMax);
 
-  float MotorPower = HumanPowerWattFiltered * MotorPowerBoostFactor;
+  if (StopMotorPower) // If StopMotorPower is set to true in the interrupt routine, stop the bike
+  {
+    TargetMotorPower = 0;
+    StopMotorPower = false; // Reset StopMotorPower flag to avoid a long stop if the interrupt is triggered again by mistake
+#ifdef DEBUG
+    Serial.println("Bike stopped since StopMotorPower flag is set");
+#endif
+  } else {
+    // Calculate the throttle value to apply to the Phase Runner
+    TargetMotorPower = HumanPowerWattFiltered * MotorPowerBoostFactor;
 
-  Throttle_Value_Volt = mapFloat(MotorPower, 0, MotorPowerAtMaxThrottle, MinThrottleValue,
-                                 MaxThrottleValue); // Map RPM to throttle voltage
+  }
+
+  Throttle_Value_Volt = mapFloat(TargetMotorPower, 0, MotorPowerAtMaxThrottle, MinThrottleValue,
+                                MaxThrottleValue);
 
   Throttle_Value = Throttle_Value_Volt * VOLT_TO_ANALOG_OUT; //
   analogWrite(ThrottlePin_Out, Throttle_Value);              // Throttle_Value has to be set as you want
@@ -99,36 +106,4 @@ void loop()
   while (micros() < NextLoopTime) // wait before starting next loop
     ;
   NextLoopTime += LoopTimeUs; // Init next loop time
-}
-
-void StopBikeEvent() // Interrupt called on falling edge of DirectionPin
-{
-  StopMotorPower = true; // Set flag to stop the bike
-#ifdef DEBUG
-  Serial.println("StopBikeEvent called"); // Remove @ Release
-#endif
-}
-
-void ResetBike() // Function to reset the bike, can be called in case of emergency or to restart the bike
-{
-  StopMotorPower = false;                   // Reset StopMotorPower flag
-  BikerRpmFiltered = 0;                     // Set filtered RPM to zero
-  TorqueValueFiltered = TorqueValueNeutral; // Set torque to neutral value to avoid a jump when restarting
-  HumanPowerWattFiltered = 0;               // Set human power to zero to avoid a jump when restarting
-  Throttle_Value = NeutralThrottleValue;    // Reset throttle to neutral value
-  // TimeBetween2edge = 10e10; // must be larger than deboune time
-  // LastTimeOfLastEdge = micros(); // must not be larger than current (micros()) + TimeStopLimit to avoid a long wait before stopping the bike in case of no pulse detected
-  // RpmStopDetector = 0;
-}
-
-void ResetTime()
-{
-  NextLoopTime = micros() + LoopTimeUs; // Reset loop time to avoid a long wait before the next loop
-}
-
-void StopBike() // Function to stop the bike by resetting the state and applying the neutral throttle value
-{
-  analogWrite(ThrottlePin_Out, NeutralThrottleValue); // Apply the throttle value to stop the bike
-  ResetBike();
-  ResetTime();
 }
