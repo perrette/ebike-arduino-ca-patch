@@ -115,7 +115,8 @@ void loop()
     if (DualMotorMode) Throttle_Value *= 0.5f;
     Throttle_Value = constrain(Throttle_Value, MinThrottleValue, MaxThrottleValue); // Constrain throttle voltage to be between the neutral value and the max throttle value
   }
-  analogWrite(ThrottlePin_Out, Throttle_Value * VOLT_TO_ANALOG_OUT);
+  float Throttle_Value_Corrected = Throttle_Value + ThrottleValueOffest; // Add an offset to the throttle value to be sure to have a smooth start and avoid a too low throttle value that would not be enough to start the motor, to be calibrated
+  analogWrite(ThrottlePin_Out, Throttle_Value_Corrected * VOLT_TO_ANALOG_OUT);
 
 #ifdef DEBUG
 uint16_t DEBUG_TYPE = DEBUG_ALL; // Set the debug type to display all debug information, or only physics, voltage or e-brake related information

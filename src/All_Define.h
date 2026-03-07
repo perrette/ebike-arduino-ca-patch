@@ -83,6 +83,7 @@ extern float HumanPowerWattFiltered; // set in ResetBike() to zero to avoid a ju
 //=========================
 #define MinThrottleValue 1.1f
 #define MaxThrottleValue 3.8f
+#define ThrottleValueOffest 0.1f
 #define MinThrottleBrakeValue 0.85f
 #define MaxThrottleBrakeValue 0.0f
 #define NeutralThrottleValue 1.0f
