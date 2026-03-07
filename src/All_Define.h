@@ -26,16 +26,23 @@
 //============================
 // Torque Sensor & Human power
 //============================
+// Sensor specs
+// SEMPU T2: 0.25 V / 10 kg.f
+// however it is tricky to calculate in practice (would require knowledge of the exact geometry of the sensor, the crank, and the pedal...)
 
-// Torque Sensor :
-// calibration for specific cranks etc (made to work in practice)
-// sensor : 0.25 kg / 10V
-// pedal krank: 15 cm
-// => (10 kg / 0.25 V) * (9.81 m/s2) * (0.15 m) = 58.86 Nm/V
+// Torque Sensor calibration
+// -------------------------
+// pedal crank length (m) x weight (kg) x 9.81 (m/s^2) = measured torque in Nm when standing on the pedal with crank in horizontal position
+// Example: man of 70 kg standing on a 15 cm pedal in horizontal position
+// with a 15 cm crank, should result in about 105 Nm
+// For a typical 15 cm crank, you should adjust the gain to obtain a measurement of 1.5 times the weight in kg.
+// A lower weight, more representative of pedalling strength, is likely better for calibration. Below a crank of 15 cm is assumed:
+// - recreational cyclist : 10 kg => 15 Nm
+// - sportive cyclist : 20-30 kg => 30-45 Nm
+// - sprint or standing start: 70-100 kg (up to three times the body weight) => 105-150 Nm
 #define TorqueValueNeutral 1.5f // from sensor data sheet
 #define TorqueValueMax 3.0f     // from sensor data sheet
-#define TorqueSensorGain 60     // Nm/V
-// #define TorqueValueMax 500.0f // Maximum torque value in Nm, to be calibrated
+#define TorqueSensorGain 80     // Nm/V (range 60-100 in practice, to be calibrated as explained above)
 #define TorqueValueFilteredAlphaGain 0.9f
 extern float TorqueValue;
 extern float TorqueValueFiltered; // Set in ResetBike() to neutral value to avoid a jump at the beginning
