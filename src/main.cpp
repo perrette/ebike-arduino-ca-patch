@@ -99,7 +99,7 @@ void loop()
                                       0, MotorPowerAtMaxThrottle * PotentiometerFraction); // Map throttle voltage to motor power, to be calibrated
     } else {
       // Calculate the throttle value to apply to the Phase Runner
-      float HumanPowerBoostFactor = HumanPowerWattFiltered * HumanBoostFactorMax * PotentiometerFraction ;
+      float HumanPowerBoostFactor = HumanBoostFactorMax * PotentiometerFraction ;
       TargetMotorPower = HumanPowerWattFiltered * HumanPowerBoostFactor;
     }
 
