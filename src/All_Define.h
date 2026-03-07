@@ -50,25 +50,41 @@ extern float TorqueValueFiltered; // Set in ResetBike() to neutral value to avoi
 // Human Power
 #define HumanPowerWattMax 1000.0f // Constrain the calculation to that value
 #define HumanPowerWattAlphaGain 0.0f
-#define MotorPowerBoostFactor 1.0f // Motor Watt per Human Watt : Gain to convert the human power to motor power
+#define HumanBoostFactorMax 4.0f
 extern float HumanPowerWatt;
 extern float HumanPowerWattFiltered; // set in ResetBike() to zero to avoid a jump at the beginning
 
-// Brake
-#define Brake_Volt_Threshold 1.2f // Threshold voltage to consider the brake is pressed, to be calibrated
-#define Brake_Volt_Min 1.25f      // Threshold voltage to consider the brake is pressed, to be calibrated
-#define Brake_Volt_Max 4.5f       // Maximum voltage for the brake sensor, to be calibrated
+//=========================
+// Analog E-Brake
+//=========================
+#define Brake_Volt_Threshold 1.2f // Threshold voltage to consider the brake is pressed
+#define Brake_Volt_Min 1.25f      // Minimum voltage to consider the brake is pressed
+#define Brake_Volt_Max 4.5f       // Maximum voltage for the brake sensor
+
+//=========================
+// Input throttle
+//=========================
+#define ThrottleInputThreshold 1.0f // Voltage corresponding to zero throttle
+#define ThrottleInputMin 1.1f // Voltage corresponding to zero throttle (measured 0.9V)
+#define ThrottleInputMax 4.2f // Voltage corresponding to max throttle
+
+//=========================
+// Input Potentiometer
+//=========================
+#define PotentiometerMin 0.5f // Voltage corresponding to minimum potentiometer value
+#define PotentiometerMax 5.0f // Voltage corresponding to maximum potentiometer value
 
 //=========================
 // Throttle to PhaseRunner
 //=========================
-// Throttle :
 #define MinThrottleValue 1.1f
 #define MaxThrottleValue 3.8f
 #define MinThrottleBrakeValue 0.85f
 #define MaxThrottleBrakeValue 0.0f
 #define NeutralThrottleValue 1.0f
-#define MotorPowerAtMaxThrottle 1500.0f // Motor power in Watt at max throttle
+#define DualMotorMode false // If true, the throttle will be applied to both motors, to the target motor power is split in two (halved)
+#define MotorPowerMax 1500.0f // Motor power in Watt at max throttle, used to map the throttle voltage to motor power, to be modulated
+
 
 //===========
 // Bike state
