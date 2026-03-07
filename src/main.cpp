@@ -61,10 +61,11 @@ void loop()
   float Potentiometer_Volt = analogRead(PotentiometerPin_In) * ANALOG_TO_VOLT_IN;
   float PotentiometerFraction = mapFloat(Potentiometer_Volt, PotentiometerMin, PotentiometerMax, 0, 1);
   float MotorPowerAtMaxThrottle = MotorPowerMax;
+  float TargetBrakePercent;
 
   if (Brake_Volt > Brake_Volt_Threshold) // If the brake is pressed, stop the bike
   {
-    event_type = EVENT_TYPE_BRAKE;
+    event_type = EVENT_TYPE_BRAKE_DIGITAL;
     StopMotor(); // Stop the bike by resetting the state and applying the neutral throttle value
   }
 
@@ -73,12 +74,15 @@ void loop()
     if (Brake_Volt > Brake_Volt_Min) // If the brake is pressed, apply a stronger stop by setting the throttle to zero, otherwise just set it to neutral
     {
       // regen
-      float TargetBrakePercent = (Brake_Volt - Brake_Volt_Min) / (Brake_Volt_Max - Brake_Volt_Min) * 100.0f;
-      TargetMotorPower = -TargetBrakePercent;  // at negative values, TargetMotorPower is interpreted as a brake percent, to be mapped to the brake throttle voltage for regen
+      TargetBrakePercent = mapFloat(Brake_Volt, Brake_Volt_Min, Brake_Volt_Max, 0, 100);
+      TargetBrakePercent = constrain(TargetBrakePercent, 0, 100);
+      TargetMotorPower = -TargetBrakePercent; // at negative values, TargetMotorPower is interpreted as a brake percent, to be mapped to the brake throttle voltage for regen
+      event_type = EVENT_TYPE_BRAKE_ANALOG;
     } else {
       // stp motor
-      TargetMotorPower = 0;
+      TargetMotorPower = 0.0f; // tiny negative value (zero would be OK, too)
     }
+    TargetMotorPower = constrain(TargetMotorPower, -100, -0.0001f); // Constrain motor power to be between the max brake power and the max throttle power
     StopMotorPower = false; // Reset StopMotorPower flag to avoid a long stop if the interrupt is triggered again by mistake
 #ifdef DEBUG
     Serial.println("Bike stopped since StopMotorPower flag is set");
@@ -90,6 +94,9 @@ void loop()
     {
       TargetMotorPower = mapFloat(ThrottleUserControl_Volt, ThrottleInputMin, ThrottleInputMax,
           0, MotorPowerAtMaxThrottle * PotentiometerFraction); // Map throttle voltage to motor power, to be calibrated
+
+      // make sure we don't have negative motor power when the throttle voltate is between threshold and min
+      TargetMotorPower = constrain(TargetMotorPower, 0, MotorPowerAtMaxThrottle * PotentiometerFraction); // Constrain motor power to be between zero and the max throttle power
     } else {
       // Calculate the throttle value to apply to the Phase Runner
       float HumanPowerBoostFactor = HumanPowerWattFiltered * HumanBoostFactorMax * PotentiometerFraction ;
@@ -101,49 +108,69 @@ void loop()
   if (TargetMotorPower < 0) {
     Throttle_Value = mapFloat(-TargetMotorPower, 0, 100,
       MinThrottleBrakeValue, MaxThrottleBrakeValue); // Map brake percent to throttle voltage for regen, to be calibrated
+    Throttle_Value = constrain(Throttle_Value, MaxThrottleBrakeValue, MinThrottleBrakeValue); // Constrain throttle voltage to be between the max brake value and the neutral value
     } else {
     Throttle_Value = mapFloat(TargetMotorPower, 0, MotorPowerAtMaxThrottle, MinThrottleValue,
                                     MaxThrottleValue);
     if (DualMotorMode) Throttle_Value *= 0.5f;
+    Throttle_Value = constrain(Throttle_Value, MinThrottleValue, MaxThrottleValue); // Constrain throttle voltage to be between the neutral value and the max throttle value
   }
-
-  Throttle_Value = constrain(Throttle_Value, 0.0f, MaxThrottleValue); // Constrain throttle voltage to be between the max brake value and the max throttle value
   analogWrite(ThrottlePin_Out, Throttle_Value * VOLT_TO_ANALOG_OUT);
 
 #ifdef DEBUG
-
-  Serial.print(">");
+uint16_t DEBUG_TYPE = DEBUG_ALL; // Set the debug type to display all debug information, or only physics, voltage or e-brake related information
+Serial.print(">");
+if (DEBUG_TYPE == DEBUG_ALL || DEBUG_TYPE == DEBUG_PHYSICS)
+{
   // Serial.print("Raw_RPM:");
   // Serial.print(BikerRpmRaw);
-  // Serial.print(",Filtered_RPM:");
+  Serial.print(",Filtered_RPM:");
   Serial.print(BikerRpmFiltered);
   //   Serial.print(",Torque_Value:");
   //   Serial.print(TorqueValue);
   //   Serial.print(",Filtered_Torque_V:");
-  Serial.print(TorqueValueFiltered);
-  // Serial.print(",Torque_Nm:");
-  // Serial.print(TorqueValueFilteredNm);
+  // Serial.print(TorqueValueFiltered);
+  Serial.print(",Torque_Nm:");
+  Serial.print(TorqueValueFilteredNm);
   //   Serial.print(",Human_Power_Watt:");
   //   Serial.print(HumanPowerWatt);
-  // Serial.print(",Filtered_Human_Power_Watt:");
+  Serial.print(",Filtered_Human_Power_Watt:");
   Serial.print(HumanPowerWattFiltered);
+  Serial.print(",Motor_Power_Watt:");
+  Serial.print(TargetMotorPower);
+
+}
+if (DEBUG_TYPE == DEBUG_ALL || DEBUG_TYPE == DEBUG_VOLTAGE){
+
   // Serial.print(",DigitalBrake:");
   // Serial.print(digitalRead(DigitalBrakePin_In));
   Serial.print(",AnalogBrake:");
   Serial.print(Brake_Volt);
   Serial.print(",ThrottleInput:");
-  Serial.print(analogRead(ThrottleUserControl_In) * ANALOG_TO_VOLT_IN);
+  Serial.print(ThrottleUserControl_Volt);
   Serial.print(",Potentiometer:");
-  Serial.print(analogRead(PotentiometerPin_In) * ANALOG_TO_VOLT_IN);
-  Serial.print(",Motor_Power_Watt:");
-  Serial.print(TargetMotorPower);
+  Serial.print(Potentiometer_Volt);
   Serial.print(",Throttle_Value:");
   Serial.print(Throttle_Value);
   //   // Serial.print(",Throttle_Check:");
   //   // Serial.print(analogRead(ThrottleCheckPin) * ANALOG_TO_VOLT_IN);
-  //   Serial.print(",Event_Type:");
-  //   Serial.print(event_type);
-  Serial.println();
+  Serial.print(",Event_Type:");
+  Serial.print(event_type);
+}
+
+if (DEBUG_TYPE == DEBUG_EBRAKE)
+{
+  Serial.print(",AnalogBrake:");
+  Serial.print(Brake_Volt);
+  Serial.print(",Motor_Power_Watt:");
+  Serial.print(TargetMotorPower);
+  Serial.print(",Throttle_Value:");
+  Serial.print(Throttle_Value);
+  Serial.print(",Event_Type:");
+  Serial.print(event_type);
+}
+Serial.println();
+
   //   Serial.println("Time left to wait (ms): " + String((NextLoopTime - micros()) / 1000.0f) + " ms (total " + String(LoopTimeUs / 1000.0f) + " ms)"); // Remove @ Release
 #endif
 

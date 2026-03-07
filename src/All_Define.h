@@ -2,6 +2,10 @@
 #define ALL_DEFINE_H
 
 #define DEBUG // Comment this line to switch to normal mode
+#define DEBUG_ALL 0
+#define DEBUG_PHYSICS 1
+#define DEBUG_VOLTAGE 2
+#define DEBUG_EBRAKE 3
 
 //===================
 // I/O configuration
@@ -104,7 +108,8 @@ extern volatile uint16_t event_type;
 #define EVENT_TYPE_DEFAULT 0
 #define EVENT_TYPE_RPM_RESET 1
 #define EVENT_TYPE_BACK_PEDALING 2
-#define EVENT_TYPE_BRAKE 3
+#define EVENT_TYPE_BRAKE_DIGITAL 3
+#define EVENT_TYPE_BRAKE_ANALOG 4
 // Timing
 #define LoopTimeUs 50000UL // Main loop duration (uSec)
 

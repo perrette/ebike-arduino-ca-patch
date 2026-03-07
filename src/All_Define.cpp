@@ -44,6 +44,6 @@ void BrakeEvent() // Interrupt called on rising edge of BrakePin
 #ifdef DEBUG
     Serial.println("BrakeEvent called");
 #endif
-    event_type = EVENT_TYPE_BRAKE;
+    event_type = EVENT_TYPE_BRAKE_DIGITAL;
     StopMotor(); // Stop the bike by resetting the state and applying the neutral throttle value
 }
