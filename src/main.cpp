@@ -59,6 +59,7 @@ void loop()
   float Brake_Volt = analogRead(Brake_In) * ANALOG_TO_VOLT_IN;
   float ThrottleUserControl_Volt = analogRead(ThrottleUserControl_In) * ANALOG_TO_VOLT_IN;
   float Potentiometer_Volt = analogRead(PotentiometerPin_In) * ANALOG_TO_VOLT_IN;
+  Potentiometer_Volt = constrain(Potentiometer_Volt, PotentiometerMin, PotentiometerMax); // Constrain potentiometer voltage to be between the min and max value
   float PotentiometerFraction = mapFloat(Potentiometer_Volt, PotentiometerMin, PotentiometerMax, 0, 1);
   float MotorPowerAtMaxThrottle = MotorPowerMax;
   float TargetBrakePercent;
@@ -92,11 +93,10 @@ void loop()
 
     if (ThrottleUserControl_Volt > ThrottleInputThreshold) // If the user is controlling the throttle, use that value instead of the automatic one
     {
-      TargetMotorPower = mapFloat(ThrottleUserControl_Volt, ThrottleInputMin, ThrottleInputMax,
-          0, MotorPowerAtMaxThrottle * PotentiometerFraction); // Map throttle voltage to motor power, to be calibrated
-
       // make sure we don't have negative motor power when the throttle voltate is between threshold and min
-      TargetMotorPower = constrain(TargetMotorPower, 0, MotorPowerAtMaxThrottle * PotentiometerFraction); // Constrain motor power to be between zero and the max throttle power
+      ThrottleUserControl_Volt = constrain(ThrottleUserControl_Volt, ThrottleInputMin, ThrottleInputMax); // Constrain throttle input voltage to be between the min and max value
+      TargetMotorPower = mapFloat(ThrottleUserControl_Volt, ThrottleInputMin, ThrottleInputMax,
+                                      0, MotorPowerAtMaxThrottle * PotentiometerFraction); // Map throttle voltage to motor power, to be calibrated
     } else {
       // Calculate the throttle value to apply to the Phase Runner
       float HumanPowerBoostFactor = HumanPowerWattFiltered * HumanBoostFactorMax * PotentiometerFraction ;
@@ -106,14 +106,14 @@ void loop()
   }
 
   if (TargetMotorPower < 0) {
+    TargetMotorPower = constrain(TargetMotorPower, -100, -0.0001f); // Constrain motor power to be between the max brake power and the max throttle power
     Throttle_Value = mapFloat(-TargetMotorPower, 0, 100,
-      MinThrottleBrakeValue, MaxThrottleBrakeValue); // Map brake percent to throttle voltage for regen, to be calibrated
-    Throttle_Value = constrain(Throttle_Value, MaxThrottleBrakeValue, MinThrottleBrakeValue); // Constrain throttle voltage to be between the max brake value and the neutral value
+                              MinThrottleBrakeValue, MaxThrottleBrakeValue);                  // Map brake percent to throttle voltage for regen, to be calibrated
     } else {
+    TargetMotorPower = constrain(TargetMotorPower, 0, MotorPowerAtMaxThrottle); // Constrain motor power to be between the max brake power and the max throttle power
     Throttle_Value = mapFloat(TargetMotorPower, 0, MotorPowerAtMaxThrottle, MinThrottleValue,
                                     MaxThrottleValue);
     if (DualMotorMode) Throttle_Value *= 0.5f;
-    Throttle_Value = constrain(Throttle_Value, MinThrottleValue, MaxThrottleValue); // Constrain throttle voltage to be between the neutral value and the max throttle value
   }
   float Throttle_Value_Corrected = Throttle_Value + ThrottleValueOffest; // Add an offset to the throttle value to be sure to have a smooth start and avoid a too low throttle value that would not be enough to start the motor, to be calibrated
   analogWrite(ThrottlePin_Out, Throttle_Value_Corrected * VOLT_TO_ANALOG_OUT);
