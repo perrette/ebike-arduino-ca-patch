@@ -75,7 +75,7 @@ extern float HumanPowerWattFiltered; // set in ResetBike() to zero to avoid a ju
 //=========================
 // Input Potentiometer
 //=========================
-#define PotentiometerMin 0.5f // Voltage corresponding to minimum potentiometer value
+#define PotentiometerMin 0.9f // Voltage corresponding to minimum potentiometer value
 #define PotentiometerMax 5.0f // Voltage corresponding to maximum potentiometer value
 
 //=========================
