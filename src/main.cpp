@@ -96,7 +96,7 @@ void loop()
       // make sure we don't have negative motor power when the throttle voltate is between threshold and min
       ThrottleUserControl_Volt = constrain(ThrottleUserControl_Volt, ThrottleInputMin, ThrottleInputMax); // Constrain throttle input voltage to be between the min and max value
       TargetMotorPower = mapFloat(ThrottleUserControl_Volt, ThrottleInputMin, ThrottleInputMax,
-                                      0, MotorPowerAtMaxThrottle * PotentiometerFraction); // Map throttle voltage to motor power, to be calibrated
+                                      0, MotorPowerAtMaxThrottle * PotentiometerFraction); // Map throttle voltage to motor power
     } else {
       // Calculate the throttle value to apply to the Phase Runner
       float HumanPowerBoostFactor = HumanBoostFactorMax * PotentiometerFraction ;
@@ -110,10 +110,10 @@ void loop()
     Throttle_Value = mapFloat(-TargetMotorPower, 0, 100,
                               MinThrottleBrakeValue, MaxThrottleBrakeValue);                  // Map brake percent to throttle voltage for regen, to be calibrated
     } else {
-    TargetMotorPower = constrain(TargetMotorPower, 0, MotorPowerAtMaxThrottle); // Constrain motor power to be between the max brake power and the max throttle power
-    Throttle_Value = mapFloat(TargetMotorPower, 0, MotorPowerAtMaxThrottle, MinThrottleValue,
-                                    MaxThrottleValue);
-    if (DualMotorMode) Throttle_Value *= 0.5f;
+      // Constrain motor power to half its target value in dual motor mode
+      TargetMotorPower = constrain(TargetMotorPower, 0, MotorPowerAtMaxThrottle * (DualMotorMode ? 0.5f : 1.0f));
+      Throttle_Value = mapFloat(TargetMotorPower, 0, MotorPowerAtMaxThrottle, MinThrottleValue,
+                                MaxThrottleValue);
   }
   float Throttle_Value_Corrected = Throttle_Value + ThrottleValueOffest; // Add an offset to the throttle value to be sure to have a smooth start and avoid a too low throttle value that would not be enough to start the motor, to be calibrated
   analogWrite(ThrottlePin_Out, Throttle_Value_Corrected * VOLT_TO_ANALOG_OUT);

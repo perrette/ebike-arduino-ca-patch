@@ -87,7 +87,7 @@ extern float HumanPowerWattFiltered; // set in ResetBike() to zero to avoid a ju
 #define MinThrottleBrakeValue 0.85f
 #define MaxThrottleBrakeValue 0.0f
 #define NeutralThrottleValue 1.0f
-#define DualMotorMode false // If true, the throttle will be applied to both motors, to the target motor power is split in two (halved)
+#define DualMotorMode true // If true, the throttle will be applied to both motors, to the target motor power is split in two (halved)
 #define MotorPowerMax 1500.0f // Motor power in Watt at max throttle, used to map the throttle voltage to motor power, to be modulated
 
 
